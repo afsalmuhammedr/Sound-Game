@@ -303,34 +303,58 @@
         }
 
         async createAnimalSounds() {
-            try {
-                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          try {
+            this.audioContext = new (window.AudioContext ||
+              window.webkitAudioContext)();
 
-                const animalList = ["lion", "bear", "tiger", "elephant"];
-                for (const name of animalList) {
-                const response = await fetch(`assets/${name}.mp3`);
-                const arrayBuffer = await response.arrayBuffer();
-                const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-                this.animalSounds[name] = audioBuffer;
-                }
+            const animalList = ["lion", "bear", "tiger", "elephant"];
+            for (const name of animalList) {
+              const response = await fetch(`assets/${name}.mp3`);
+              const arrayBuffer = await response.arrayBuffer();
+              const audioBuffer = await this.audioContext.decodeAudioData(
+                arrayBuffer
+              );
+              this.animalSounds[name] = audioBuffer;
+            }
 
-                this.soundsLoaded = true;
-                this.loadingStatus.textContent = "🎵 MP3 animal sounds loaded! Ready to play.";
-                this.loadingStatus.style.color = "#2ecc71";
-            } catch (error) {
-                console.error("Error loading audio files:", error);
-                this.loadingStatus.textContent = "⚠️ Failed to load audio files.";
-                this.soundsLoaded = false;
-            }
-            }
-        
-        setupEventListeners() {   
-        document.addEventListener("click", () => {
-            if (!this.introSpoken) {
-                this.speak("Welcome to Echo Escape. This is an audio-based game where you must escape from animals by swiping in the opposite direction of their sounds. To start the game, press and hold the screen for 3 seconds. To stop the game, press and hold again for 3 seconds.");
+            // Load jungle ambience
+            const jungleRes = await fetch("assets/jungle.mp3");
+            const jungleBuf = await jungleRes.arrayBuffer();
+            this.jungleBuffer = await this.audioContext.decodeAudioData(
+              jungleBuf
+            );
+
+            // Load player running
+            const runningRes = await fetch("assets/running.mp3");
+            const runningBuf = await runningRes.arrayBuffer();
+            this.runningBuffer = await this.audioContext.decodeAudioData(
+              runningBuf
+            );
+
+            this.soundsLoaded = true;
+            this.loadingStatus.textContent =
+              "🎵 MP3 animal sounds loaded! Ready to play.";
+            this.loadingStatus.style.color = "#2ecc71";
+          } catch (error) {
+            console.error("Error loading audio files:", error);
+            this.loadingStatus.textContent = "⚠️ Failed to load audio files.";
+            this.soundsLoaded = false;
+          }
+        }
+
+        setupEventListeners() {
+          document.addEventListener(
+            "click",
+            () => {
+              if (!this.introSpoken) {
+                this.speak(
+                  "Welcome to Echo Escape. This is an audio-based game where you must escape from animals by swiping in the opposite direction of their sounds. To start the game, press and hold the screen for 3 seconds. To stop the game, press and hold again for 3 seconds."
+                );
                 this.introSpoken = true;
-            }
-        }, { once: true });
+              }
+            },
+            { once: true }
+          );
           // Touch events for swipe detection and hold to start/stop
           this.swipeArea.addEventListener(
             "touchstart",
@@ -541,6 +565,40 @@
           }, 500);
         }
 
+        playJungleAmbience() {
+        if (!this.jungleBuffer) return;
+
+        const source = this.audioContext.createBufferSource();
+        source.buffer = this.jungleBuffer;
+        source.loop = true;
+
+        const gainNode = this.audioContext.createGain();
+        gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime); // Volume (0 = mute, 1 = full)
+
+        source.connect(gainNode).connect(this.audioContext.destination);
+        source.start();
+
+        this.jungleSource = source;
+        this.jungleGainNode = gainNode;
+        }
+
+        playRunningSound() {
+        if (!this.runningBuffer) return;
+
+        const source = this.audioContext.createBufferSource();
+        source.buffer = this.runningBuffer;
+        source.loop = true;
+
+        const gainNode = this.audioContext.createGain();
+        gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime); // Slightly louder
+
+        source.connect(gainNode).connect(this.audioContext.destination);
+        source.start();
+
+        this.runningSource = source;
+        this.runningGainNode = gainNode;
+        }
+
         async startGame() {
           try {
             if (this.holdSound) {
@@ -566,6 +624,8 @@
             if (this.ambientSoundsCheckbox.checked) {
               this.startAmbientSounds();
             }
+            this.playJungleAmbience();
+            this.playRunningSound();
 
             setTimeout(() => {
               if (this.isPlaying) {
@@ -589,6 +649,16 @@
           }
 
           this.isPlaying = false;
+          if (this.jungleSource) {
+            this.jungleSource.stop();
+            this.jungleSource.disconnect();
+            this.jungleSource = null;
+          }
+          if (this.runningSource) {
+            this.runningSource.stop();
+            this.runningSource.disconnect();
+            this.runningSource = null;
+          }
 
           if (this.challengeTimeout) {
             clearTimeout(this.challengeTimeout);
@@ -728,33 +798,34 @@
         }
 
         playDirectionalAnimalSound(threat) {
-            const panValue = {
-                left: -0.8,
-                right: 0.8,
-                up: 0,
-                down: 0,
+          const panValue =
+            {
+              left: -0.8,
+              right: 0.8,
+              up: 0,
+              down: 0,
             }[threat.direction] || 0;
 
-            const audioBuffer = this.animalSounds[threat.sound];
-            if (!audioBuffer) {
-                console.warn(`Missing sound for ${threat.sound}`);
-                return;
-            }
+          const audioBuffer = this.animalSounds[threat.sound];
+          if (!audioBuffer) {
+            console.warn(`Missing sound for ${threat.sound}`);
+            return;
+          }
 
-            const source = this.audioContext.createBufferSource();
-            const panner = this.audioContext.createStereoPanner();
-            const gainNode = this.audioContext.createGain();
+          const source = this.audioContext.createBufferSource();
+          const panner = this.audioContext.createStereoPanner();
+          const gainNode = this.audioContext.createGain();
 
-            source.buffer = audioBuffer;
-            source.connect(panner);
-            panner.connect(gainNode);
-            gainNode.connect(this.audioContext.destination);
+          source.buffer = audioBuffer;
+          source.connect(panner);
+          panner.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
 
-            panner.pan.setValueAtTime(panValue, this.audioContext.currentTime);
+          panner.pan.setValueAtTime(panValue, this.audioContext.currentTime);
 
-            gainNode.gain.setValueAtTime(0.7, this.audioContext.currentTime);
+          gainNode.gain.setValueAtTime(0.7, this.audioContext.currentTime);
 
-            source.start();
+          source.start();
         }
 
         playFallbackSound(threat, panValue, gainNode) {
@@ -857,8 +928,7 @@
 
         correctReaction() {
           this.score += 10;
-          this.gameStatus.textContent =
-            "Perfect escape! You're safe!";
+          this.gameStatus.textContent = "Perfect escape! You're safe!";
           this.playSuccessSound();
 
           if (this.voiceGuidanceCheckbox.checked) {

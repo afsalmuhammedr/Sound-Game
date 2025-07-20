@@ -91,6 +91,16 @@ class EnhancedAudioSurvivalGame {
         this.animalSounds[name] = audioBuffer;
       }
 
+      // Load jungle ambience
+      const jungleRes = await fetch("assets/jungle.mp3");
+      const jungleBuf = await jungleRes.arrayBuffer();
+      this.jungleBuffer = await this.audioContext.decodeAudioData(jungleBuf);
+
+      // Load player running
+      const runningRes = await fetch("assets/running.mp3");
+      const runningBuf = await runningRes.arrayBuffer();
+      this.runningBuffer = await this.audioContext.decodeAudioData(runningBuf);
+
       this.soundsLoaded = true;
       this.loadingStatus.textContent =
         "🎵 MP3 animal sounds loaded! Ready to play.";
@@ -312,6 +322,39 @@ class EnhancedAudioSurvivalGame {
       this.swipeFeedback.classList.remove("show");
     }, 500);
   }
+  playJungleAmbience() {
+    if (!this.jungleBuffer) return;
+
+    const source = this.audioContext.createBufferSource();
+    source.buffer = this.jungleBuffer;
+    source.loop = true;
+
+    const gainNode = this.audioContext.createGain();
+    gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime); // Volume (0 = mute, 1 = full)
+
+    source.connect(gainNode).connect(this.audioContext.destination);
+    source.start();
+
+    this.jungleSource = source;
+    this.jungleGainNode = gainNode;
+  }
+
+  playRunningSound() {
+    if (!this.runningBuffer) return;
+
+    const source = this.audioContext.createBufferSource();
+    source.buffer = this.runningBuffer;
+    source.loop = true;
+
+    const gainNode = this.audioContext.createGain();
+    gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime); // Slightly louder
+
+    source.connect(gainNode).connect(this.audioContext.destination);
+    source.start();
+
+    this.runningSource = source;
+    this.runningGainNode = gainNode;
+  }
 
   async startGame() {
     try {
@@ -338,6 +381,8 @@ class EnhancedAudioSurvivalGame {
       if (this.ambientSoundsCheckbox.checked) {
         this.startAmbientSounds();
       }
+      this.playJungleAmbience();
+      this.playRunningSound();
 
       setTimeout(() => {
         if (this.isPlaying) {
@@ -361,7 +406,16 @@ class EnhancedAudioSurvivalGame {
     }
 
     this.isPlaying = false;
-
+    if (this.jungleSource) {
+      this.jungleSource.stop();
+      this.jungleSource.disconnect();
+      this.jungleSource = null;
+    }
+    if (this.runningSource) {
+      this.runningSource.stop();
+      this.runningSource.disconnect();
+      this.runningSource = null;
+    }
     if (this.challengeTimeout) {
       clearTimeout(this.challengeTimeout);
     }

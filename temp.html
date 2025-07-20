@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Survival Game - Swipe Edition</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Arial", sans-serif;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: white;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+        user-select: none;
+      }
+
+      .game-container {
+        text-align: center;
+        max-width: 800px;
+        padding: 2rem;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .status {
+        font-size: 1.5rem;
+        margin: 1rem 0;
+        min-height: 2rem;
+      }
+
+      .score {
+        font-size: 1.2rem;
+        margin: 0.5rem 0;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 5px;
+        margin: 1rem 0;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ff6b6b, #feca57);
+        width: 0%;
+        transition: width 0.1s linear;
+      }
+
+      .loading {
+        font-size: 1rem;
+        color: #feca57;
+        margin: 1rem 0;
+      }
+
+      .settings {
+        margin: 1rem 0;
+        padding: 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+      }
+
+      .setting-item {
+        margin: 0.5rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      input[type="checkbox"] {
+        transform: scale(1.5);
+      }
+
+      label {
+        font-size: 1.1rem;
+      }
+
+      .game-area {
+        min-height: 300px;
+        margin: 2rem 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 15px;
+        border: 2px dashed rgba(255, 255, 255, 0.3);
+        position: relative;
+        touch-action: none;
+      }
+
+      .swipe-area {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+
+      .swipe-visual {
+        font-size: 3rem;
+        opacity: 0.6;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.4;
+        }
+        50% {
+          opacity: 0.8;
+        }
+      }
+
+      .swipe-feedback {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: bold;
+        pointer-events: none;
+        opacity: 0;
+        transition: all 0.3s ease;
+      }
+
+      .swipe-feedback.show {
+        opacity: 1;
+        animation: swipeFeedback 0.5s ease;
+      }
+
+      @keyframes swipeFeedback {
+        0% {
+          transform: translate(-50%, -50%) scale(0.5);
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.2);
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+
+      @media (max-width: 600px) {
+        .game-container {
+          padding: 1rem;
+          margin: 1rem;
+        }
+
+        h1 {
+          font-size: 2rem;
+        }
+
+        .game-area {
+          min-height: 250px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-container">
+      <h1>🦁 Echo Escape</h1>
+      <div class="status" id="gameStatus">
+        Welcome! Put on headphones for the best experience with realistic animal
+        sounds.
+      </div>
+      <div class="loading" id="loadingStatus">Loading...</div>
+      <div class="score">
+        <span>Score: <span id="score">0</span></span> |
+        <span>Lives: <span id="lives">3</span></span>
+      </div>
+
+      <div class="settings">
+        <div class="setting-item">
+          <input type="checkbox" id="voiceGuidance" checked />
+          <label for="voiceGuidance">Voice Guidance</label>
+        </div>
+        <div class="setting-item">
+          <input type="checkbox" id="ambientSounds" checked />
+          <label for="ambientSounds">Ambient Sounds</label>
+        </div>
+        <div class="setting-item">
+          <input type="checkbox" id="realisticSounds" checked />
+          <label for="realisticSounds">Realistic Animal Sounds</label>
+        </div>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="timeProgress"></div>
+      </div>
+
+      <div class="game-area" id="swipeArea">
+        <div class="swipe-area">
+          <div class="swipe-visual">📱</div>
+        </div>
+        <div class="swipe-feedback" id="swipeFeedback"></div>
+      </div>
+    </div>
+
+    <script>
+      class EnhancedAudioSurvivalGame {
+        constructor() {
+          this.audioContext = null;
+          this.ambientSource = null;
+          this.isPlaying = false;
+          this.score = 0;
+          this.lives = 3;
+          this.currentChallenge = null;
+          this.challengeTimeout = null;
+          this.progressInterval = null;
+          this.timeLeft = 0;
+          this.maxTime = 6000;
+          this.soundsLoaded = false;
+          this.animalSounds = {};
+          this.holdTimer = null;
+          this.holdDuration = 3000; // 3 seconds
+
+          // Touch/Swipe properties
+          this.touchStartX = 0;
+          this.touchStartY = 0;
+          this.minSwipeDistance = 50;
+
+          this.threats = [
+            {
+              sound: "lion",
+              direction: "left",
+              escape: "right",
+              frequency: 220,
+              description: "Lion roaring",
+            },
+            {
+              sound: "elephant",
+              direction: "right",
+              escape: "left",
+              frequency: 440,
+              description: "Elephant trumpeting",
+            },
+            {
+              sound: "tiger",
+              direction: "up",
+              escape: "down",
+              frequency: 880,
+              description: "Tiger growling",
+            },
+            {
+              sound: "bear",
+              direction: "down",
+              escape: "up",
+              frequency: 110,
+              description: "Bear growling",
+            },
+          ];
+
+          this.initializeElements();
+          this.setupEventListeners();
+          this.createAnimalSounds();
+
+          // Speak initial instructions
+          setTimeout(() => {
+            this.speak(
+              "Welcome to Echo Escape. This is an audio-based game where you must escape from animals by swiping in the opposite direction of their sounds. To start the game, press and hold the screen for 3 seconds. To stop the game, press and hold again for 3 seconds."
+            );
+          }, 1000);
+        }
+
+        initializeElements() {
+          this.gameStatus = document.getElementById("gameStatus");
+          this.loadingStatus = document.getElementById("loadingStatus");
+          this.scoreElement = document.getElementById("score");
+          this.livesElement = document.getElementById("lives");
+          this.voiceGuidanceCheckbox = document.getElementById("voiceGuidance");
+          this.ambientSoundsCheckbox = document.getElementById("ambientSounds");
+          this.realisticSoundsCheckbox =
+            document.getElementById("realisticSounds");
+          this.timeProgress = document.getElementById("timeProgress");
+          this.swipeArea = document.getElementById("swipeArea");
+          this.swipeFeedback = document.getElementById("swipeFeedback");
+        }
+
+        async createAnimalSounds() {
+            try {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                const animalList = ["lion", "bear", "tiger", "elephant"];
+                for (const name of animalList) {
+                const response = await fetch(`assets/${name}.mp3`);
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                this.animalSounds[name] = audioBuffer;
+                }
+
+                this.soundsLoaded = true;
+                this.loadingStatus.textContent = "🎵 MP3 animal sounds loaded! Ready to play.";
+                this.loadingStatus.style.color = "#2ecc71";
+            } catch (error) {
+                console.error("Error loading audio files:", error);
+                this.loadingStatus.textContent = "⚠️ Failed to load audio files.";
+                this.soundsLoaded = false;
+            }
+            }
+        
+        setupEventListeners() {   
+        document.addEventListener("click", () => {
+            if (!this.introSpoken) {
+                this.speak("Welcome to Echo Escape. This is an audio-based game where you must escape from animals by swiping in the opposite direction of their sounds. To start the game, press and hold the screen for 3 seconds. To stop the game, press and hold again for 3 seconds.");
+                this.introSpoken = true;
+            }
+        }, { once: true });
+          // Touch events for swipe detection and hold to start/stop
+          this.swipeArea.addEventListener(
+            "touchstart",
+            (e) => {
+              this.handleTouchStart(e);
+              this.startHoldTimer();
+            },
+            { passive: false }
+          );
+
+          this.swipeArea.addEventListener(
+            "touchend",
+            (e) => {
+              this.handleTouchEnd(e);
+              this.cancelHoldTimer();
+            },
+            { passive: false }
+          );
+
+          this.swipeArea.addEventListener(
+            "touchcancel",
+            () => this.cancelHoldTimer(),
+            { passive: false }
+          );
+
+          // Mouse events for desktop swipe simulation
+          this.swipeArea.addEventListener("mousedown", (e) => {
+            this.handleMouseDown(e);
+            this.startHoldTimer();
+          });
+
+          this.swipeArea.addEventListener("mouseup", (e) => {
+            this.handleMouseUp(e);
+            this.cancelHoldTimer();
+          });
+
+          this.swipeArea.addEventListener("mouseleave", () =>
+            this.cancelHoldTimer()
+          );
+
+          // Keyboard events (still supported)
+          document.addEventListener("keydown", (e) => {
+            if (!this.isPlaying) return;
+
+            let direction = null;
+            switch (e.key) {
+              case "ArrowUp":
+                direction = "up";
+                break;
+              case "ArrowDown":
+                direction = "down";
+                break;
+              case "ArrowLeft":
+                direction = "left";
+                break;
+              case "ArrowRight":
+                direction = "right";
+                break;
+            }
+
+            if (direction) {
+              e.preventDefault();
+              this.handleGesture(direction);
+            }
+          });
+
+          // Prevent default touch behaviors on the swipe area
+          this.swipeArea.addEventListener(
+            "touchmove",
+            (e) => e.preventDefault(),
+            { passive: false }
+          );
+        }
+
+        startHoldTimer() {
+          this.holdTimer = setTimeout(() => {
+            if (this.isPlaying) {
+              this.stopGame();
+              this.speak(
+                "Game stopped. Press and hold for 3 seconds to start again."
+              );
+            } else {
+              this.startGame();
+            }
+          }, this.holdDuration);
+
+          // Play a sound to indicate hold has started
+          this.playHoldSound();
+        }
+
+        cancelHoldTimer() {
+          if (this.holdTimer) {
+            clearTimeout(this.holdTimer);
+            this.holdTimer = null;
+          }
+        }
+
+        playHoldSound() {
+          const oscillator = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+
+          oscillator.frequency.setValueAtTime(
+            220,
+            this.audioContext.currentTime
+          );
+          oscillator.type = "sine";
+
+          gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+
+          oscillator.start();
+
+          // Stop the sound when the hold is cancelled or completed
+          this.holdSound = {
+            stop: () => {
+              oscillator.stop();
+              oscillator.disconnect();
+            },
+          };
+        }
+
+        handleTouchStart(e) {
+          if (!this.isPlaying) return;
+
+          e.preventDefault();
+          const touch = e.touches[0];
+          this.touchStartX = touch.clientX;
+          this.touchStartY = touch.clientY;
+        }
+
+        handleTouchEnd(e) {
+          if (!this.isPlaying) return;
+
+          e.preventDefault();
+          const touch = e.changedTouches[0];
+          const touchEndX = touch.clientX;
+          const touchEndY = touch.clientY;
+
+          this.processSwipe(
+            this.touchStartX,
+            this.touchStartY,
+            touchEndX,
+            touchEndY
+          );
+        }
+
+        handleMouseDown(e) {
+          this.touchStartX = e.clientX;
+          this.touchStartY = e.clientY;
+          this.isMouseDown = true;
+        }
+
+        handleMouseUp(e) {
+          if (!this.isMouseDown) return;
+
+          this.isMouseDown = false;
+
+          if (this.isPlaying) {
+            this.processSwipe(
+              this.touchStartX,
+              this.touchStartY,
+              e.clientX,
+              e.clientY
+            );
+          }
+        }
+
+        processSwipe(startX, startY, endX, endY) {
+          const deltaX = endX - startX;
+          const deltaY = endY - startY;
+          const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+          if (distance < this.minSwipeDistance) {
+            return; // Not a significant swipe
+          }
+
+          // Determine swipe direction
+          let direction = null;
+          if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            // Horizontal swipe
+            direction = deltaX > 0 ? "right" : "left";
+          } else {
+            // Vertical swipe
+            direction = deltaY > 0 ? "down" : "up";
+          }
+
+          if (direction) {
+            this.showSwipeFeedback(direction);
+            this.handleGesture(direction);
+          }
+        }
+
+        showSwipeFeedback(direction) {
+          const arrows = {
+            up: "⬆️",
+            down: "⬇️",
+            left: "⬅️",
+            right: "➡️",
+          };
+
+          this.swipeFeedback.textContent = arrows[direction];
+          this.swipeFeedback.classList.add("show");
+
+          setTimeout(() => {
+            this.swipeFeedback.classList.remove("show");
+          }, 500);
+        }
+
+        async startGame() {
+          try {
+            if (this.holdSound) {
+              this.holdSound.stop();
+              this.holdSound = null;
+            }
+
+            if (this.audioContext.state === "suspended") {
+              await this.audioContext.resume();
+            }
+
+            this.isPlaying = true;
+            this.score = 0;
+            this.lives = 3;
+
+            this.updateUI();
+            this.gameStatus.textContent =
+              "Game started! Listen for the animals and swipe to escape!";
+            this.speak(
+              "Game started! Listen for animal sounds and swipe in the opposite direction to escape."
+            );
+
+            if (this.ambientSoundsCheckbox.checked) {
+              this.startAmbientSounds();
+            }
+
+            setTimeout(() => {
+              if (this.isPlaying) {
+                this.nextChallenge();
+              }
+            }, 2000);
+          } catch (error) {
+            console.error("Error starting game:", error);
+            this.gameStatus.textContent =
+              "Error: Please allow audio access and try again.";
+            this.speak(
+              "Error starting game. Please allow audio access and try again."
+            );
+          }
+        }
+
+        stopGame() {
+          if (this.holdSound) {
+            this.holdSound.stop();
+            this.holdSound = null;
+          }
+
+          this.isPlaying = false;
+
+          if (this.challengeTimeout) {
+            clearTimeout(this.challengeTimeout);
+          }
+
+          if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+          }
+
+          if (this.ambientSource) {
+            this.ambientSource.stop();
+            this.ambientSource = null;
+          }
+
+          this.timeProgress.style.width = "0%";
+
+          this.gameStatus.textContent = `Game stopped. Final Score: ${this.score}`;
+        }
+
+        startAmbientSounds() {
+          const oscillator1 = this.audioContext.createOscillator();
+          const oscillator2 = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+
+          oscillator1.frequency.setValueAtTime(
+            60,
+            this.audioContext.currentTime
+          );
+          oscillator2.frequency.setValueAtTime(
+            80,
+            this.audioContext.currentTime
+          );
+
+          oscillator1.type = "sine";
+          oscillator2.type = "triangle";
+
+          gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+
+          oscillator1.connect(gainNode);
+          oscillator2.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+
+          oscillator1.start();
+          oscillator2.start();
+
+          this.ambientSource = {
+            stop: () => {
+              oscillator1.stop();
+              oscillator2.stop();
+            },
+          };
+
+          this.playRandomNatureSounds();
+        }
+
+        playRandomNatureSounds() {
+          if (!this.isPlaying) return;
+
+          setTimeout(() => {
+            if (this.isPlaying && this.ambientSoundsCheckbox.checked) {
+              this.playBirdChirp();
+              this.playRandomNatureSounds();
+            }
+          }, Math.random() * 5000 + 3000);
+        }
+
+        playBirdChirp() {
+          const oscillator = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+
+          oscillator.frequency.setValueAtTime(
+            800,
+            this.audioContext.currentTime
+          );
+          oscillator.frequency.exponentialRampToValueAtTime(
+            1200,
+            this.audioContext.currentTime + 0.1
+          );
+          oscillator.frequency.exponentialRampToValueAtTime(
+            600,
+            this.audioContext.currentTime + 0.2
+          );
+
+          gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(
+            0.3,
+            this.audioContext.currentTime + 0.05
+          );
+          gainNode.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.audioContext.currentTime + 0.2
+          );
+
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+
+          oscillator.start();
+          oscillator.stop(this.audioContext.currentTime + 0.2);
+        }
+
+        nextChallenge() {
+          if (!this.isPlaying) return;
+
+          const delay = Math.random() * 3000 + 2000;
+
+          setTimeout(() => {
+            if (this.isPlaying) {
+              this.spawnThreat();
+            }
+          }, delay);
+        }
+
+        spawnThreat() {
+          if (!this.isPlaying) return;
+
+          this.currentChallenge =
+            this.threats[Math.floor(Math.random() * this.threats.length)];
+
+          this.playDirectionalAnimalSound(this.currentChallenge);
+
+          this.gameStatus.textContent = `${this.currentChallenge.description} from the ${this.currentChallenge.direction}!`;
+
+          if (this.voiceGuidanceCheckbox.checked) {
+            setTimeout(() => {
+              this.speak(
+                `${this.currentChallenge.sound} approaching from ${this.currentChallenge.direction}! Move ${this.currentChallenge.escape}!`
+              );
+            }, 500);
+          }
+
+          this.timeLeft = this.maxTime;
+          this.startProgressBar();
+
+          this.challengeTimeout = setTimeout(() => {
+            this.missedReaction();
+          }, this.maxTime);
+        }
+
+        playDirectionalAnimalSound(threat) {
+            const panValue = {
+                left: -0.8,
+                right: 0.8,
+                up: 0,
+                down: 0,
+            }[threat.direction] || 0;
+
+            const audioBuffer = this.animalSounds[threat.sound];
+            if (!audioBuffer) {
+                console.warn(`Missing sound for ${threat.sound}`);
+                return;
+            }
+
+            const source = this.audioContext.createBufferSource();
+            const panner = this.audioContext.createStereoPanner();
+            const gainNode = this.audioContext.createGain();
+
+            source.buffer = audioBuffer;
+            source.connect(panner);
+            panner.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            panner.pan.setValueAtTime(panValue, this.audioContext.currentTime);
+
+            gainNode.gain.setValueAtTime(0.7, this.audioContext.currentTime);
+
+            source.start();
+        }
+
+        playFallbackSound(threat, panValue, gainNode) {
+          const oscillator = this.audioContext.createOscillator();
+          const pannerNode = this.audioContext.createStereoPanner();
+
+          oscillator.frequency.setValueAtTime(
+            threat.frequency,
+            this.audioContext.currentTime
+          );
+
+          if (threat.sound === "lion") {
+            oscillator.type = "sawtooth";
+            oscillator.frequency.linearRampToValueAtTime(
+              200,
+              this.audioContext.currentTime + 0.5
+            );
+          } else if (threat.sound === "elephant") {
+            oscillator.type = "square";
+            oscillator.frequency.linearRampToValueAtTime(
+              800,
+              this.audioContext.currentTime + 0.3
+            );
+          } else if (threat.sound === "tiger") {
+            oscillator.type = "sine";
+            oscillator.frequency.linearRampToValueAtTime(
+              1500,
+              this.audioContext.currentTime + 0.3
+            );
+          } else if (threat.sound === "bear") {
+            oscillator.type = "triangle";
+            oscillator.frequency.setValueAtTime(
+              80,
+              this.audioContext.currentTime
+            );
+          }
+
+          pannerNode.pan.setValueAtTime(
+            panValue,
+            this.audioContext.currentTime
+          );
+
+          gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(
+            0.6,
+            this.audioContext.currentTime + 0.1
+          );
+          gainNode.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.audioContext.currentTime + 1
+          );
+
+          oscillator.connect(gainNode);
+          gainNode.connect(pannerNode);
+          pannerNode.connect(this.audioContext.destination);
+
+          oscillator.start();
+          oscillator.stop(this.audioContext.currentTime + 1);
+        }
+
+        speak(text) {
+          if ("speechSynthesis" in window) {
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.2;
+            utterance.volume = 0.8;
+            speechSynthesis.speak(utterance);
+          }
+        }
+
+        startProgressBar() {
+          this.progressInterval = setInterval(() => {
+            this.timeLeft -= 50;
+            const progress = Math.max(0, (this.timeLeft / this.maxTime) * 100);
+            this.timeProgress.style.width = progress + "%";
+
+            if (this.timeLeft <= 0) {
+              clearInterval(this.progressInterval);
+            }
+          }, 50);
+        }
+
+        handleGesture(direction) {
+          if (!this.currentChallenge || !this.isPlaying) return;
+
+          clearTimeout(this.challengeTimeout);
+          clearInterval(this.progressInterval);
+
+          if (direction === this.currentChallenge.escape) {
+            this.correctReaction();
+          } else {
+            this.incorrectReaction(direction);
+          }
+
+          this.currentChallenge = null;
+          this.timeProgress.style.width = "0%";
+        }
+
+        correctReaction() {
+          this.score += 10;
+          this.gameStatus.textContent =
+            "Perfect escape! You're safe!";
+          this.playSuccessSound();
+
+          if (this.voiceGuidanceCheckbox.checked) {
+            this.speak("Correct! You escaped safely.");
+          }
+
+          this.updateUI();
+          this.nextChallenge();
+        }
+
+        incorrectReaction(direction) {
+          this.lives--;
+          this.gameStatus.textContent = `Wrong direction! The ${this.currentChallenge.sound} caught you! Lives: ${this.lives}`;
+          this.playFailureSound();
+
+          if (this.voiceGuidanceCheckbox.checked) {
+            this.speak(
+              `Wrong direction! The ${this.currentChallenge.sound} caught you! Lives remaining: ${this.lives}`
+            );
+          }
+
+          this.updateUI();
+
+          if (this.lives <= 0) {
+            this.gameOver();
+          } else {
+            this.nextChallenge();
+          }
+        }
+
+        missedReaction() {
+          this.lives--;
+          this.gameStatus.textContent = `Too slow! The ${this.currentChallenge.sound} caught you! Lives: ${this.lives}`;
+          this.playFailureSound();
+
+          if (this.voiceGuidanceCheckbox.checked) {
+            this.speak(
+              `Too slow! The ${this.currentChallenge.sound} caught you! Lives remaining: ${this.lives}`
+            );
+          }
+
+          this.updateUI();
+
+          if (this.lives <= 0) {
+            this.gameOver();
+          } else {
+            this.nextChallenge();
+          }
+        }
+
+        playSuccessSound() {
+          const oscillator = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+
+          oscillator.frequency.setValueAtTime(
+            440,
+            this.audioContext.currentTime
+          );
+          oscillator.frequency.exponentialRampToValueAtTime(
+            880,
+            this.audioContext.currentTime + 0.2
+          );
+
+          gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(
+            0.4,
+            this.audioContext.currentTime + 0.05
+          );
+          gainNode.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.audioContext.currentTime + 0.3
+          );
+
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+
+          oscillator.start();
+          oscillator.stop(this.audioContext.currentTime + 0.3);
+        }
+
+        playFailureSound() {
+          const oscillator = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+
+          oscillator.frequency.setValueAtTime(
+            200,
+            this.audioContext.currentTime
+          );
+          oscillator.frequency.exponentialRampToValueAtTime(
+            100,
+            this.audioContext.currentTime + 0.5
+          );
+          oscillator.type = "sawtooth";
+
+          gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(
+            0.5,
+            this.audioContext.currentTime + 0.05
+          );
+          gainNode.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.audioContext.currentTime + 0.5
+          );
+
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+
+          oscillator.start();
+          oscillator.stop(this.audioContext.currentTime + 0.5);
+        }
+
+        gameOver() {
+          this.stopGame();
+          this.speak(`Game over! Your final score is ${this.score} points.`);
+        }
+
+        updateUI() {
+          this.scoreElement.textContent = this.score;
+          this.livesElement.textContent = this.lives;
+        }
+      }
+
+      // Initialize the game when page loads
+      window.addEventListener("load", () => {
+        new EnhancedAudioSurvivalGame();
+      });
+    </script>
+  </body>
+</html>

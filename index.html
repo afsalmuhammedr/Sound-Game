@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Audio Survival Game </title>
-    <link rel="stylesheet" href="style.css" />
+    <title>Audio Survival Game - Swipe Edition</title>
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <div class="game-container">
@@ -34,24 +34,15 @@
         </div>
       </div>
 
-      <div class="controls">
-        <button id="startBtn">Start Game</button>
-        <button id="stopBtn" disabled>Stop Game</button>
-      </div>
-
       <div class="progress-bar">
         <div class="progress-fill" id="timeProgress"></div>
       </div>
 
-      <div class="game-area">
-        <div class="gesture-buttons">
-          <div></div>
-          <button class="gesture-btn" data-direction="up">⬆️</button>
-          <div></div>
-          <button class="gesture-btn" data-direction="left">⬅️</button>
-          <button class="gesture-btn" data-direction="down">⬇️</button>
-          <button class="gesture-btn" data-direction="right">➡️</button>
+      <div class="game-area" id="swipeArea">
+        <div class="swipe-area">
+          <div class="swipe-visual">📱</div>
         </div>
+        <div class="swipe-feedback" id="swipeFeedback"></div>
       </div>
     </div>
 

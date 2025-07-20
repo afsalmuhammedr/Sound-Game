@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Survival Game </title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="game-container">
+      <h1>🦁 Echo Escape</h1>
+      <div class="status" id="gameStatus">
+        Welcome! Put on headphones for the best experience with realistic animal
+        sounds.
+      </div>
+      <div class="loading" id="loadingStatus">Loading...</div>
+      <div class="score">
+        <span>Score: <span id="score">0</span></span> |
+        <span>Lives: <span id="lives">3</span></span>
+      </div>
+
+      <div class="settings">
+        <div class="setting-item">
+          <input type="checkbox" id="voiceGuidance" checked />
+          <label for="voiceGuidance">Voice Guidance</label>
+        </div>
+        <div class="setting-item">
+          <input type="checkbox" id="ambientSounds" checked />
+          <label for="ambientSounds">Ambient Sounds</label>
+        </div>
+        <div class="setting-item">
+          <input type="checkbox" id="realisticSounds" checked />
+          <label for="realisticSounds">Realistic Animal Sounds</label>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn">Start Game</button>
+        <button id="stopBtn" disabled>Stop Game</button>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="timeProgress"></div>
+      </div>
+
+      <div class="game-area">
+        <div class="gesture-buttons">
+          <div></div>
+          <button class="gesture-btn" data-direction="up">⬆️</button>
+          <div></div>
+          <button class="gesture-btn" data-direction="left">⬅️</button>
+          <button class="gesture-btn" data-direction="down">⬇️</button>
+          <button class="gesture-btn" data-direction="right">➡️</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
